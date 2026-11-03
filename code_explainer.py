@@ -1,26 +1,8 @@
-import requests
+"""Compatibility wrapper: explanations are generated locally without a fake API key."""
 
-API_URL = "https://router.huggingface.co/hf-inference/models/google/flan-t5-large"
+from ai_analyzer import analyze_code
 
-headers = {
-    "Authorization": "Bearer hf_your_token_here"
-}
 
-def explain_code(code):
-
-    prompt = f"Explain this code line by line:\n{code}"
-
-    response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
-
-    if response.status_code != 200:
-        return f"API Error: {response.text}"
-
-    try:
-        result = response.json()
-    except:
-        return "Error reading AI response."
-
-    if isinstance(result, list):
-        return result[0].get("generated_text", "No explanation returned.")
-    else:
-        return str(result)
+def explain_code(code: str, language: str = "Auto detect") -> str:
+    result = analyze_code(code, language)
+    return result["explanation"]
