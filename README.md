@@ -1,6 +1,6 @@
-# AI Code Mentor
+# VioletLint
 
-A Streamlit learning tool for static code review. It supports Python, Java, C, and C++ syntax parsing and selected warning checks. The submitted program is never executed.
+A dark, purple-themed Streamlit workspace for learning from code reviews. VioletLint supports Python, Java, C, and C++ syntax parsing and selected warning checks. The submitted program is never executed.
 
 ## Run locally
 
@@ -11,6 +11,10 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 streamlit run app.py
 ```
+
+## Interface
+
+The app uses a dark navy workspace with violet accents, a code editor beside review settings, and a focused results panel. Choose a language or use auto-detect, then select a full review or syntax-only view.
 
 ## Supported analysis
 

@@ -193,7 +193,7 @@ def analyze_code(code: str, requested_language: str = "Auto detect") -> dict:
             "analysis.no-findings"))
 
     explanation = f"Analyzed as {language}. Analysis is static: the submitted program is not executed."
-    parser_unavailable = any(f.rule == "parser.unavailable" for f in findings)
+    parser_unavailable = language not in {"Python", *TREE_SITTER_NAMES} or any(f.rule == "parser.unavailable" for f in findings)
     syntax_errors = any(f.severity == "Error" and f.rule.startswith("syntax.") for f in findings)
     syntax_status = "Unavailable" if parser_unavailable else "Errors found" if syntax_errors else "No syntax errors found"
     return {
