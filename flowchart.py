@@ -6,7 +6,8 @@ from graphviz import Digraph
 def generate_flowchart(code: str, language: str = "Python") -> Digraph:
     """Create a compact control-flow outline; this is not a compiler CFG."""
     graph = Digraph(format="svg")
-    graph.attr(rankdir="TB", node_attr={"shape": "box", "style": "rounded,filled", "fillcolor": "#eef4ff"})
+    graph.attr(rankdir="TB")
+    graph.attr("node", shape="box", style="rounded,filled", fillcolor="#eef4ff")
     graph.node("start", "Start", shape="oval", fillcolor="#d7f5e5")
     previous = "start"
     count = 0
