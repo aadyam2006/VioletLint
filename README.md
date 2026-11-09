@@ -2,6 +2,9 @@
 
 A dark, purple-themed Streamlit workspace for learning from code reviews. VioletLint supports Python, Java, C, and C++ syntax parsing and selected warning checks. The submitted program is never executed.
 
+> 🚀 **Live Interactive Demo:** [Open VioletLint](https://violetlint.streamlit.app/) ↗
+> Click the link to try the code review studio in your browser.
+
 ## Run locally
 
 ```bash
