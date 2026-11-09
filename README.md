@@ -14,7 +14,7 @@ streamlit run app.py
 
 ## Interface
 
-The app uses a dark navy workspace with violet accents, a code editor beside review settings, and a focused results panel. Choose a language or use auto-detect, then select a full review or syntax-only view.
+The app opens with a bold violet landing hero, refined type, and quick feature cards, followed by a dark code workspace with the editor beside review settings. Choose a language or use auto-detect, then select a full review or syntax-only view.
 
 ## Supported analysis
 
@@ -22,7 +22,9 @@ The app uses a dark navy workspace with violet accents, a code editor beside rev
 - Java, C, and C++: Tree-sitter parses source and reports syntax error locations. Selected pattern checks warn about Java string identity comparisons and unsafe C/C++ buffer functions or likely missing `&` in `scanf` destinations.
 - All supported languages: a rough loop-based complexity estimate and a compact source outline are shown.
 
-These are static checks, not a complete compiler, type checker, security scanner, or proof of correctness. They can miss real defects and can flag code that is intentional. The app does not execute user code. Complexity estimates are especially approximate for Java, C, and C++.
+The results also include a heuristic auxiliary-space estimate, example replacements for a few recognized warning patterns, and a conditional hash set/map optimization tip for nested comparison loops. These suggestions only apply when their stated conditions fit the program.
+
+These are static checks, not a complete compiler, type checker, security scanner, or proof of correctness. They can miss real defects and can flag code that is intentional. Replacement examples are provided only for a few recognized patterns and should be reviewed before use. The app does not execute user code. Time and space complexity estimates are approximate for every language, especially when called functions, recursion, library behavior, or input sizes affect the result.
 
 ## Adding checks
 
