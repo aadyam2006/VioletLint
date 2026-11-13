@@ -1,6 +1,6 @@
 # VioletLint
 
-A dark blue-and-cyan Streamlit workspace for learning from code reviews. VioletLint supports Python, Java, C, and C++ syntax parsing and selected warning checks. The analyzer is static; an optional **Run code in sandbox** action sends a single-file program to Judge0 and displays its output or errors.
+A dark blue-and-cyan Streamlit workspace for learning from code reviews. VioletLint supports Python, Java, C, and C++ syntax parsing and selected warning checks. The analyzer is static; an optional **Run code in sandbox** action sends a single-file program to Wandbox and displays its output or errors.
 
 > 🚀 **Live Interactive Demo:** [Open VioletLint](https://violetlint.streamlit.app/) ↗
 > Click the link to try the code review studio in your browser.
@@ -21,20 +21,9 @@ The app opens with a bold blue-and-cyan landing hero, refined type, and quick fe
 
 ## Run a program
 
-Click **Run code in sandbox** to compile/execute a single-file Python, Java, C, or C++ program and view stdout, stderr, compile errors, runtime, and memory. Optional stdin can be entered under **Program input**. Runs are submitted to Judge0 CE over HTTPS, not executed by the Streamlit server. The integration applies time and memory limits, disables network access for the submitted program, and limits source/input/output sizes. Java examples should use a `Main` class.
+Click **Run code in sandbox** to compile/execute a single-file Python, Java, C, or C++ program and view stdout, stderr, and compiler messages. Optional stdin can be entered under **Program input**. Runs are submitted to Wandbox over HTTPS, not executed by the Streamlit server. The app limits source, input, and displayed output sizes. Java programs need a valid `main` method.
 
-Running code sends the pasted source and stdin to Judge0. Do not submit passwords, API keys, private source code, or other sensitive information. The default public Judge0 endpoint can block hosted-app requests; if that happens, configure Judge0 CE through RapidAPI or use a self-hosted Judge0 endpoint. Put the settings in the Streamlit app's **Manage app → Settings → Secrets** panel:
-
-```toml
-# RapidAPI option (the app selects this endpoint when a key is present)
-JUDGE0_RAPIDAPI_KEY = "your-rapidapi-key"
-
-# Optional self-hosted Judge0 option instead
-# JUDGE0_API_URL = "https://your-judge0-host"
-# JUDGE0_AUTH_TOKEN = "your-token-if-required"
-```
-
-Never commit real credentials to GitHub. Because the app is public, visitors can use the configured API quota; use a limited plan/key and rotate or remove it if unexpected usage appears.
+Running code sends the pasted source and stdin to the public Wandbox service. Do not submit passwords, API keys, private source code, or other sensitive information. Wandbox is a volunteer-run service: its official repository notes per-IP limits and no service-level agreement, so runs may be throttled or temporarily unavailable. The integration does not save a permalink for submitted programs.
 
 ## Supported analysis
 
@@ -44,7 +33,7 @@ Never commit real credentials to GitHub. Because the app is public, visitors can
 
 The results also include a heuristic auxiliary-space estimate, example replacements for a few recognized warning patterns, and a conditional hash set/map optimization tip for nested comparison loops. These suggestions only apply when their stated conditions fit the program.
 
-These are static checks, not a complete compiler, type checker, security scanner, or proof of correctness. They can miss real defects and can flag code that is intentional. Replacement examples are provided only for a few recognized patterns and should be reviewed before use. The static analyzer does not execute user code; the separate sandbox run only executes after the user explicitly clicks its button. Time and space complexity estimates are approximate for every language, especially when called functions, recursion, library behavior, or input sizes affect the result.
+These are static checks, not a complete compiler, type checker, security scanner, or proof of correctness. They can miss real defects and can flag code that is intentional. Replacement examples are provided only for a few recognized patterns and should be reviewed before use. The static analyzer does not execute user code; the separate remote run only happens after the user explicitly clicks its button. Time and space complexity estimates are approximate for every language, especially when called functions, recursion, library behavior, or input sizes affect the result.
 
 ## Adding checks
 

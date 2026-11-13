@@ -118,7 +118,7 @@ st.markdown(
     '<div class="hero-title">Make your next line<br>of code <span>make sense.</span></div>'
     '<p class="hero-copy">Catch syntax issues, spot suspicious patterns, and understand complexity—all in one calm workspace built for learning.</p>'
     '<div class="hero-actions"><a class="hero-cta" href="#workspace">Open the workspace <span>↘</span></a>'
-    '<span class="hero-note">Reviews stay static. Optional runs use an isolated Judge0 sandbox.</span></div>'
+    '<span class="hero-note">Reviews stay static. Optional runs use Wandbox’s compiler sandbox.</span></div>'
     '</div></section>',
     unsafe_allow_html=True,
 )
@@ -148,7 +148,7 @@ with editor:
             key="source_code",
         )
         analyze_clicked = st.button("✦  Analyze my code", type="primary", use_container_width=True, disabled=not code.strip())
-        st.caption("Run sends this code to Judge0 to compile and execute it in a sandbox. Don’t run private code or secrets.")
+        st.caption("Run sends this code to Wandbox to compile and execute it. Don’t send private code or secrets.")
         run_clicked = st.button("▶  Run code in sandbox", use_container_width=True, disabled=not code.strip())
 
 with review:
@@ -175,21 +175,8 @@ if run_clicked:
         st.error("Choose Python, Java, C, or C++ before running this code.")
     else:
         try:
-            try:
-                rapidapi_key = st.secrets.get("JUDGE0_RAPIDAPI_KEY", "")
-                default_url = "https://judge0-ce.p.rapidapi.com" if rapidapi_key else "https://ce.judge0.com"
-                api_url = st.secrets.get("JUDGE0_API_URL", default_url)
-                api_token = st.secrets.get("JUDGE0_AUTH_TOKEN", "")
-                rapidapi_host = st.secrets.get("JUDGE0_RAPIDAPI_HOST", "judge0-ce.p.rapidapi.com")
-            except Exception:
-                api_url, api_token, rapidapi_key = "https://ce.judge0.com", "", ""
-                rapidapi_host = "judge0-ce.p.rapidapi.com"
-            with st.spinner(f"Running {run_language} in the Judge0 sandbox…"):
-                run_result = run_code(
-                    code, run_language, program_input, api_url=api_url,
-                    api_token=api_token, rapidapi_key=rapidapi_key,
-                    rapidapi_host=rapidapi_host,
-                )
+            with st.spinner(f"Running {run_language} in Wandbox…"):
+                run_result = run_code(code, run_language, program_input)
             st.session_state.run_result = {
                 "result": run_result,
                 "code": code,
@@ -205,25 +192,28 @@ if saved_run and saved_run.get("code") == code and saved_run.get("language") == 
     with st.container(border=True):
         st.subheader("Program output")
         run_status = run_result.get("status_description", "Finished")
-        st.caption(f"{saved_run['language']} · {run_status} · sandboxed run")
-        if run_result.get("compile_output"):
-            st.error("Compilation error")
-            st.code(run_result["compile_output"], language="text")
+        st.caption(f"{saved_run['language']} · {run_status} · Wandbox run")
+        if run_result.get("exit_code") not in {"", "0"}:
+            st.error(f"Program exited with code {run_result['exit_code']}.")
+        if run_result.get("signal"):
+            st.error(f"Program stopped by signal {run_result['signal']}.")
+        if run_result.get("compiler_error"):
+            heading = "Compilation error" if run_result.get("exit_code") not in {"", "0"} else "Compiler messages"
+            (st.error if heading == "Compilation error" else st.info)(heading)
+            st.code(run_result["compiler_error"], language="text")
+        if run_result.get("compiler_output"):
+            st.caption("Compiler output")
+            st.code(run_result["compiler_output"], language="text")
         if run_result.get("stderr"):
             st.warning("Program error output (stderr)")
             st.code(run_result["stderr"], language="text")
         if run_result.get("stdout"):
             st.markdown("**Output (stdout)**")
             st.code(run_result["stdout"], language="text")
-        elif not run_result.get("compile_output") and not run_result.get("stderr"):
-            if run_status == "Accepted":
-                st.info("The program finished without printing output.")
-            else:
-                st.error(f"The program did not finish successfully: {run_status}.")
+        elif not run_result.get("compiler_error") and not run_result.get("stderr") and run_result.get("exit_code") == "0":
+            st.info("The program finished without printing output.")
         if run_result.get("message"):
             st.caption(run_result["message"])
-        if run_result.get("time") is not None:
-            st.caption(f"Runtime: {run_result['time']} s · Memory: {run_result.get('memory', 'n/a')} KB")
 
 result = st.session_state.get("analysis")
 analyzed_code = st.session_state.get("analyzed_code", "")
