@@ -29,6 +29,12 @@ def _request_json(url: str, *, payload: dict | None = None, timeout: float = 25)
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
         detail = exc.read(1000).decode("utf-8", errors="replace")
+        if '"error_code":1010' in detail or '"error_name":"browser_signature_banned"' in detail:
+            raise SandboxError(
+                "Wandbox blocked requests from VioletLint's hosted server (Cloudflare 1010). "
+                "Do not retry here. Run the code in VS Code, or use a compiler service that "
+                "allows requests from this app."
+            ) from None
         raise SandboxError(f"Wandbox returned HTTP {exc.code}: {detail}") from None
     except (URLError, TimeoutError, OSError) as exc:
         raise SandboxError(f"Could not reach Wandbox: {exc}") from None
