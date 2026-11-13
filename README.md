@@ -23,14 +23,18 @@ The app opens with a bold blue-and-cyan landing hero, refined type, and quick fe
 
 Click **Run code in sandbox** to compile/execute a single-file Python, Java, C, or C++ program and view stdout, stderr, compile errors, runtime, and memory. Optional stdin can be entered under **Program input**. Runs are submitted to Judge0 CE over HTTPS, not executed by the Streamlit server. The integration applies time and memory limits, disables network access for the submitted program, and limits source/input/output sizes. Java examples should use a `Main` class.
 
-Running code sends the pasted source and stdin to Judge0. Do not submit passwords, API keys, private source code, or other sensitive information. The hosted Judge0 endpoint may have availability, language-version, or usage limits. A self-hosted or authenticated Judge0 endpoint can be configured in Streamlit secrets:
+Running code sends the pasted source and stdin to Judge0. Do not submit passwords, API keys, private source code, or other sensitive information. The default public Judge0 endpoint can block hosted-app requests; if that happens, configure Judge0 CE through RapidAPI or use a self-hosted Judge0 endpoint. Put the settings in the Streamlit app's **Manage app → Settings → Secrets** panel:
 
 ```toml
-JUDGE0_API_URL = "https://your-judge0-host"
-JUDGE0_AUTH_TOKEN = "your-token-if-required"
+# RapidAPI option (the app selects this endpoint when a key is present)
+JUDGE0_RAPIDAPI_KEY = "your-rapidapi-key"
+
+# Optional self-hosted Judge0 option instead
+# JUDGE0_API_URL = "https://your-judge0-host"
+# JUDGE0_AUTH_TOKEN = "your-token-if-required"
 ```
 
-The token is optional when the configured Judge0 instance does not require authentication. Never commit real credentials to GitHub.
+Never commit real credentials to GitHub. Because the app is public, visitors can use the configured API quota; use a limited plan/key and rotate or remove it if unexpected usage appears.
 
 ## Supported analysis
 

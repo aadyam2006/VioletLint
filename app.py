@@ -176,12 +176,20 @@ if run_clicked:
     else:
         try:
             try:
-                api_url = st.secrets.get("JUDGE0_API_URL", "https://ce.judge0.com")
+                rapidapi_key = st.secrets.get("JUDGE0_RAPIDAPI_KEY", "")
+                default_url = "https://judge0-ce.p.rapidapi.com" if rapidapi_key else "https://ce.judge0.com"
+                api_url = st.secrets.get("JUDGE0_API_URL", default_url)
                 api_token = st.secrets.get("JUDGE0_AUTH_TOKEN", "")
+                rapidapi_host = st.secrets.get("JUDGE0_RAPIDAPI_HOST", "judge0-ce.p.rapidapi.com")
             except Exception:
-                api_url, api_token = "https://ce.judge0.com", ""
+                api_url, api_token, rapidapi_key = "https://ce.judge0.com", "", ""
+                rapidapi_host = "judge0-ce.p.rapidapi.com"
             with st.spinner(f"Running {run_language} in the Judge0 sandbox…"):
-                run_result = run_code(code, run_language, program_input, api_url=api_url, api_token=api_token)
+                run_result = run_code(
+                    code, run_language, program_input, api_url=api_url,
+                    api_token=api_token, rapidapi_key=rapidapi_key,
+                    rapidapi_host=rapidapi_host,
+                )
             st.session_state.run_result = {
                 "result": run_result,
                 "code": code,

@@ -32,6 +32,11 @@ def _request_json(url: str, *, method: str = "GET", payload: dict | None = None,
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
         detail = exc.read(1500).decode("utf-8", errors="replace")
+        if '"error_code":"1010"' in detail or '"error_name":"browser_signature_banned"' in detail:
+            raise SandboxError(
+                "Judge0 blocked the public endpoint (Cloudflare 1010). Add a Judge0 RapidAPI key "
+                "in Streamlit app Secrets, or configure your own Judge0 endpoint."
+            ) from None
         raise SandboxError(f"Judge0 returned HTTP {exc.code}: {detail}") from None
     except (URLError, TimeoutError, OSError) as exc:
         raise SandboxError(f"Could not reach the code sandbox: {exc}") from None
@@ -58,7 +63,8 @@ def _find_language_id(languages: list[dict], language: str) -> int:
 
 
 def run_code(source: str, language: str, stdin: str = "", *,
-             api_url: str = "https://ce.judge0.com", api_token: str = "") -> dict:
+             api_url: str = "https://ce.judge0.com", api_token: str = "",
+             rapidapi_key: str = "", rapidapi_host: str = "judge0-ce.p.rapidapi.com") -> dict:
     """Submit one file, poll briefly, and return stdout/stderr/status metadata."""
     if not source.strip():
         raise SandboxError("Paste some code before running it.")
@@ -70,7 +76,10 @@ def run_code(source: str, language: str, stdin: str = "", *,
     base = api_url.strip().rstrip("/")
     if not base.startswith("https://"):
         raise SandboxError("The Judge0 endpoint must use HTTPS.")
-    headers = {"X-Auth-Token": api_token} if api_token else {}
+    if rapidapi_key:
+        headers = {"X-RapidAPI-Key": rapidapi_key, "X-RapidAPI-Host": rapidapi_host}
+    else:
+        headers = {"X-Auth-Token": api_token} if api_token else {}
     languages = _request_json(f"{base}/languages", headers=headers)
     if not isinstance(languages, list):
         raise SandboxError("Judge0 returned an invalid language list.")
