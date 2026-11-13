@@ -1,9 +1,9 @@
-"""Submit single-file programs to Wandbox's remote compiler sandbox."""
+"""Run single-file programs through OnlineCompiler's remote sandbox."""
 
 from __future__ import annotations
 
 import json
-from functools import lru_cache
+import os
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -11,61 +11,47 @@ from urllib.request import Request, urlopen
 MAX_SOURCE_BYTES = 12_000
 MAX_STDIN_BYTES = 2_000
 MAX_OUTPUT_CHARS = 12_000
-WANDBOX_API = "https://wandbox.org/api"
+RUN_URL = "https://api.onlinecompiler.io/api/run-code-sync/"
+COMPILERS = {
+    "Python": "python-3.14",
+    "Java": "openjdk-25",
+    "C": "gcc-15",
+    "C++": "g++-15",
+}
 
 
 class SandboxError(RuntimeError):
     """A concise, user-displayable error from the code runner."""
 
 
-def _request_json(url: str, *, payload: dict | None = None, timeout: float = 25) -> dict | list:
-    data = json.dumps(payload).encode("utf-8") if payload is not None else None
-    headers = {"Accept": "application/json"}
-    if data is not None:
-        headers["Content-Type"] = "application/json"
-    request = Request(url, data=data, headers=headers)
+def _api_key() -> str:
+    """Read the API key from environment or Streamlit secrets, never the UI."""
+    key = os.environ.get("ONLINECOMPILER_API_KEY", "").strip()
+    if key:
+        return key
     try:
-        with urlopen(request, timeout=timeout) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except HTTPError as exc:
-        detail = exc.read(1000).decode("utf-8", errors="replace")
-        if '"error_code":1010' in detail or '"error_name":"browser_signature_banned"' in detail:
-            raise SandboxError(
-                "Wandbox blocked requests from VioletLint's hosted server (Cloudflare 1010). "
-                "Do not retry here. Run the code in VS Code, or use a compiler service that "
-                "allows requests from this app."
-            ) from None
-        raise SandboxError(f"Wandbox returned HTTP {exc.code}: {detail}") from None
-    except (URLError, TimeoutError, OSError) as exc:
-        raise SandboxError(f"Could not reach Wandbox: {exc}") from None
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        raise SandboxError("Wandbox returned an unreadable response.") from None
+        import streamlit as st
+
+        return str(st.secrets.get("ONLINECOMPILER_API_KEY", "")).strip()
+    except Exception:
+        return ""
 
 
-@lru_cache(maxsize=1)
-def _compiler_list() -> tuple[dict, ...]:
-    """Cache the compiler catalog so repeated runs don't keep fetching it."""
-    entries = _request_json(f"{WANDBOX_API}/list.json", timeout=10)
-    if not isinstance(entries, list):
-        raise SandboxError("Wandbox returned an invalid compiler list.")
-    return tuple(item for item in entries if isinstance(item, dict))
-
-
-def _find_compiler(language: str) -> str:
-    entries = [item for item in _compiler_list() if item.get("language") == language]
-    # Prefer stable compiler versions over experimental HEAD builds.
-    entries = [item for item in entries if "head" not in item.get("name", "").lower()]
-    if language == "C":
-        entries = [item for item in entries if item.get("name", "").startswith("gcc-")]
-    elif language == "C++":
-        entries = [item for item in entries if item.get("name", "").startswith("gcc-")]
-    elif language == "Python":
-        entries = [item for item in entries if item.get("name", "").startswith("cpython-")]
-    elif language == "Java":
-        entries = [item for item in entries if item.get("name", "").startswith("openjdk-")]
-    if not entries:
-        raise SandboxError(f"Wandbox does not currently list a stable {language} compiler.")
-    return str(entries[0]["name"])
+def _friendly_http_error(exc: HTTPError) -> SandboxError:
+    detail = exc.read(1200).decode("utf-8", errors="replace")
+    if exc.code in {401, 403}:
+        return SandboxError(
+            "OnlineCompiler rejected the API key. Check that ONLINECOMPILER_API_KEY "
+            "is set correctly in Streamlit Secrets."
+        )
+    if exc.code == 429:
+        return SandboxError(
+            "The free compiler service is busy or this account reached a usage limit. "
+            "Wait a little and check the OnlineCompiler dashboard; no run was started."
+        )
+    if exc.code >= 500:
+        return SandboxError("OnlineCompiler is temporarily unavailable. Try again later.")
+    return SandboxError(f"OnlineCompiler returned HTTP {exc.code}: {detail}")
 
 
 def run_code(source: str, language: str, stdin: str = "") -> dict:
@@ -76,31 +62,64 @@ def run_code(source: str, language: str, stdin: str = "") -> dict:
         raise SandboxError(f"Code is too large. Keep it under {MAX_SOURCE_BYTES:,} bytes.")
     if len(stdin.encode("utf-8")) > MAX_STDIN_BYTES:
         raise SandboxError(f"Input is too large. Keep it under {MAX_STDIN_BYTES:,} bytes.")
-    if language not in {"Python", "Java", "C", "C++"}:
+    if language not in COMPILERS:
         raise SandboxError("Choose Python, Java, C, or C++ before running this code.")
 
-    compiler = _find_compiler(language)
-    response = _request_json(
-        f"{WANDBOX_API}/compile.json",
-        payload={"compiler": compiler, "code": source, "stdin": stdin, "save": False},
-    )
-    if not isinstance(response, dict):
-        raise SandboxError("Wandbox returned an invalid execution result.")
+    key = _api_key()
+    if not key:
+        raise SandboxError(
+            "Code running needs a free OnlineCompiler API key. Add ONLINECOMPILER_API_KEY "
+            "to Streamlit Cloud → Manage app → Settings → Secrets, then restart the app. "
+            "For local VS Code, put it in .streamlit/secrets.toml. Do not paste the key here or commit it to GitHub."
+        )
 
-    status = str(response.get("status", ""))
-    compiler_error = response.get("compiler_error") or ""
-    compiler_output = response.get("compiler_output") or ""
+    payload = json.dumps(
+        {"compiler": COMPILERS[language], "code": source, "input": stdin}
+    ).encode("utf-8")
+    request = Request(
+        RUN_URL,
+        data=payload,
+        headers={
+            "Authorization": key,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=40) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        raise _friendly_http_error(exc) from None
+    except (URLError, TimeoutError, OSError) as exc:
+        raise SandboxError(f"Could not reach OnlineCompiler: {exc}") from None
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise SandboxError("OnlineCompiler returned an unreadable response.") from None
+
+    if not isinstance(data, dict):
+        raise SandboxError("OnlineCompiler returned an invalid execution result.")
+
+    status = str(data.get("status", ""))
+    exit_code = data.get("exit_code")
+    error_text = data.get("error") or ""
     result = {
-        "stdout": response.get("program_output") or "",
-        "stderr": response.get("program_error") or "",
-        "compiler_error": compiler_error,
-        "compiler_output": compiler_output,
-        "exit_code": status,
-        "signal": response.get("signal") or "",
-        "status_description": "Finished" if status == "0" else "Execution failed",
+        "stdout": data.get("output") or "",
+        "stderr": error_text if status != "success" else "",
+        # The API uses the same `error` field for compiler and runtime stderr.
+        "compiler_error": "",
+        "compiler_output": "",
+        "exit_code": str(exit_code if exit_code is not None else (0 if status == "success" else 1)),
+        "signal": data.get("signal") or "",
+        "status_description": (
+            "Finished" if status == "success"
+            else (status.replace("_", " ").title() or "Execution failed")
+        ),
+        "runtime": data.get("time") or "",
+        "memory": data.get("memory") or "",
+        "message": "",
     }
-    for key in ("stdout", "stderr", "compiler_error", "compiler_output"):
-        value = result[key]
+    for key_name in ("stdout", "stderr", "compiler_error", "compiler_output"):
+        value = result[key_name]
         if isinstance(value, str) and len(value) > MAX_OUTPUT_CHARS:
-            result[key] = value[:MAX_OUTPUT_CHARS] + "\n… output truncated …"
+            result[key_name] = value[:MAX_OUTPUT_CHARS] + "\n… output truncated …"
     return result

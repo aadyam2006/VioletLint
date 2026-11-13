@@ -118,7 +118,7 @@ st.markdown(
     '<div class="hero-title">Make your next line<br>of code <span>make sense.</span></div>'
     '<p class="hero-copy">Catch syntax issues, spot suspicious patterns, and understand complexity—all in one calm workspace built for learning.</p>'
     '<div class="hero-actions"><a class="hero-cta" href="#workspace">Open the workspace <span>↘</span></a>'
-    '<span class="hero-note">Reviews stay static. Optional runs use Wandbox’s compiler sandbox.</span></div>'
+      '<span class="hero-note">Reviews stay static. Optional runs use OnlineCompiler’s sandbox.</span></div>'
     '</div></section>',
     unsafe_allow_html=True,
 )
@@ -148,7 +148,7 @@ with editor:
             key="source_code",
         )
         analyze_clicked = st.button("✦  Analyze my code", type="primary", use_container_width=True, disabled=not code.strip())
-        st.caption("Run sends this code to Wandbox to compile and execute it. Don’t send private code or secrets.")
+        st.caption("Run sends this code and optional input to OnlineCompiler to compile and execute it. Don’t send private code or secrets.")
         run_clicked = st.button("▶  Run code in sandbox", use_container_width=True, disabled=not code.strip())
 
 with review:
@@ -175,7 +175,7 @@ if run_clicked:
         st.error("Choose Python, Java, C, or C++ before running this code.")
     else:
         try:
-            with st.spinner(f"Running {run_language} in Wandbox…"):
+            with st.spinner(f"Running {run_language} in OnlineCompiler…"):
                 run_result = run_code(code, run_language, program_input)
             st.session_state.run_result = {
                 "result": run_result,
@@ -192,20 +192,19 @@ if saved_run and saved_run.get("code") == code and saved_run.get("language") == 
     with st.container(border=True):
         st.subheader("Program output")
         run_status = run_result.get("status_description", "Finished")
-        st.caption(f"{saved_run['language']} · {run_status} · Wandbox run")
+        st.caption(f"{saved_run['language']} · {run_status} · OnlineCompiler sandbox")
         if run_result.get("exit_code") not in {"", "0"}:
             st.error(f"Program exited with code {run_result['exit_code']}.")
         if run_result.get("signal"):
             st.error(f"Program stopped by signal {run_result['signal']}.")
         if run_result.get("compiler_error"):
-            heading = "Compilation error" if run_result.get("exit_code") not in {"", "0"} else "Compiler messages"
-            (st.error if heading == "Compilation error" else st.info)(heading)
+            st.error("Compiler error")
             st.code(run_result["compiler_error"], language="text")
         if run_result.get("compiler_output"):
             st.caption("Compiler output")
             st.code(run_result["compiler_output"], language="text")
         if run_result.get("stderr"):
-            st.warning("Program error output (stderr)")
+            st.warning("Compiler or runtime messages (stderr)")
             st.code(run_result["stderr"], language="text")
         if run_result.get("stdout"):
             st.markdown("**Output (stdout)**")
@@ -214,6 +213,16 @@ if saved_run and saved_run.get("code") == code and saved_run.get("language") == 
             st.info("The program finished without printing output.")
         if run_result.get("message"):
             st.caption(run_result["message"])
+        run_details = []
+        if run_result.get("runtime"):
+            run_details.append(f"Runtime: {run_result['runtime']} s")
+        if run_result.get("memory"):
+            try:
+                run_details.append(f"Memory: {int(run_result['memory']) / 1024:.1f} MB")
+            except (TypeError, ValueError):
+                pass
+        if run_details:
+            st.caption(" · ".join(run_details))
 
 result = st.session_state.get("analysis")
 analyzed_code = st.session_state.get("analyzed_code", "")

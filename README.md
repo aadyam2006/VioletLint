@@ -1,6 +1,6 @@
 # VioletLint
 
-A dark blue-and-cyan Streamlit workspace for learning from code reviews. VioletLint supports Python, Java, C, and C++ syntax parsing and selected warning checks. The analyzer is static; an optional **Run code in sandbox** action sends a single-file program to Wandbox and displays its output or errors.
+A dark blue-and-cyan Streamlit workspace for learning from code reviews. VioletLint supports Python, Java, C, and C++ syntax parsing and selected warning checks. The analyzer is static; an optional **Run code in sandbox** action sends a single-file program to OnlineCompiler and displays its output or errors.
 
 > 🚀 **Live Interactive Demo:** [Open VioletLint](https://violetlint.streamlit.app/) ↗
 > Click the link to try the code review studio in your browser.
@@ -21,9 +21,22 @@ The app opens with a bold blue-and-cyan landing hero, refined type, and quick fe
 
 ## Run a program
 
-Click **Run code in sandbox** to compile/execute a single-file Python, Java, C, or C++ program and view stdout, stderr, and compiler messages. Optional stdin can be entered under **Program input**. Runs are submitted to Wandbox over HTTPS, not executed by the Streamlit server. The app limits source, input, and displayed output sizes. Java programs need a valid `main` method.
+Click **Run code in sandbox** to compile/execute a single-file Python, Java, C, or C++ program and view stdout, error output, runtime, and memory use. Optional stdin can be entered under **Program input**. Runs are submitted to OnlineCompiler over HTTPS, not executed by the Streamlit server. The app limits source, input, and displayed output sizes. Java programs need a valid `main` method.
 
-Running code sends the pasted source and stdin to the public Wandbox service. Do not submit passwords, API keys, private source code, or other sensitive information. Wandbox is a volunteer-run service: its official repository notes per-IP limits and no service-level agreement, so runs may be throttled or temporarily unavailable. The integration does not save a permalink for submitted programs.
+Running code sends the pasted source and stdin to OnlineCompiler. Do not submit passwords, API keys, private source code, or other sensitive information. The provider documents a free plan with 100,000 runs per month and no credit card; runs are refused after the account or key limit is reached. Set a monthly limit on the API key in its dashboard if you want a smaller cap.
+
+### Set up the free run feature
+
+1. Create a free account and API key at [OnlineCompiler](https://api.onlinecompiler.io/). The service requires an API key for execution.
+2. In Streamlit Community Cloud, open **Manage app → Settings → Secrets** and add:
+
+   ```toml
+   ONLINECOMPILER_API_KEY = "paste-your-key-here"
+   ```
+
+3. Save the secret and restart/reboot the app. Never put the key in Python files, GitHub, or chat.
+
+For local development, create `.streamlit/secrets.toml` with that same setting. This file is ignored by Git.
 
 ## Supported analysis
 
