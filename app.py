@@ -1,3 +1,5 @@
+from html import escape
+
 import streamlit as st
 
 from ai_analyzer import LANGUAGES, analyze_code, detect_language
@@ -107,6 +109,20 @@ st.markdown(
       background:#091522 !important;
       color:#eaf7ff !important;
       -webkit-text-fill-color:#eaf7ff !important;
+    }
+    .program-output {
+      box-sizing:border-box;
+      width:100%;
+      margin:0;
+      padding:16px;
+      overflow-x:auto;
+      border:1px solid #29445b;
+      border-radius:12px;
+      background:#091522;
+      color:#eaf7ff;
+      font:13px/1.65 'Cascadia Code','Consolas','SFMono-Regular',monospace;
+      white-space:pre-wrap;
+      overflow-wrap:anywhere;
     }
     @media(max-width:780px) { [data-testid="stMainBlockContainer"]{padding:1.1rem 1rem 3rem;}
       .hero{padding:28px 24px; min-height:260px;} .hero-inner{max-width:100%;} .hero:before,.hero:after{right:-90px;}
@@ -219,7 +235,10 @@ if saved_run and saved_run.get("code") == code and saved_run.get("language") == 
             st.code(run_result["stderr"], language="text")
         if run_result.get("stdout"):
             st.markdown("**Output (stdout)**")
-            st.code(run_result["stdout"], language="text")
+            st.markdown(
+                f'<pre class="program-output">{escape(str(run_result["stdout"]))}</pre>',
+                unsafe_allow_html=True,
+            )
         elif not run_result.get("compiler_error") and not run_result.get("stderr") and run_result.get("exit_code") == "0":
             st.info("The program finished without printing output.")
         if run_result.get("message"):
