@@ -97,6 +97,17 @@ st.markdown(
     [data-testid="stAlert"] { border-radius:12px; }
     hr { border-color:#293d52; }
     code { color:#8be1ff !important; }
+    [data-testid="stCodeBlock"] {
+      background:#091522 !important;
+      border:1px solid #29445b !important;
+      border-radius:12px !important;
+    }
+    [data-testid="stCodeBlock"] pre,
+    [data-testid="stCodeBlock"] pre code {
+      background:#091522 !important;
+      color:#eaf7ff !important;
+      -webkit-text-fill-color:#eaf7ff !important;
+    }
     @media(max-width:780px) { [data-testid="stMainBlockContainer"]{padding:1.1rem 1rem 3rem;}
       .hero{padding:28px 24px; min-height:260px;} .hero-inner{max-width:100%;} .hero:before,.hero:after{right:-90px;}
       .metric-row{grid-template-columns:1fr;} .topbadge{display:none;} }
