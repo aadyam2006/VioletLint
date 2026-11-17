@@ -5,6 +5,8 @@ A dark blue-and-cyan Streamlit workspace for learning from code reviews. VioletL
 > 🚀 **Live Interactive Demo:** [Open VioletLint](https://violetlint.streamlit.app/) ↗
 > Click the link to try the code review studio in your browser.
 
+![VioletLint interface](project_screenshot.png)
+
 ## Run locally
 
 ```bash
@@ -14,6 +16,8 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 streamlit run app.py
 ```
+
+Run the analyzer tests locally with `python -m pip install -r requirements-dev.txt` followed by `python -m pytest -q`.
 
 ## Interface
 
@@ -40,13 +44,28 @@ For local development, create `.streamlit/secrets.toml` with that same setting. 
 
 ## Supported analysis
 
-- Python: Python's AST parser reports syntax errors. Selected checks identify constant division by zero, mutable default arguments, bare `except`, suspicious endless loops, and a narrow name/operation mismatch case.
-- Java, C, and C++: Tree-sitter parses source and reports syntax error locations. Selected pattern checks warn about Java string identity comparisons and unsafe C/C++ buffer functions or likely missing `&` in `scanf` destinations.
-- All supported languages: a rough loop-based complexity estimate and a compact source outline are shown.
+- Python: Python's AST parser reports syntax errors and selected checks cover unused locals, `== None`, shadowed built-ins, unreachable statements, unmanaged `open()` calls, literal identity comparisons, duplicate dictionary keys, dynamic `eval()`/`exec()`, broad exception handlers, `assert False`, constant division by zero, mutable defaults, bare `except`, suspicious endless loops, and a narrow name/operation mismatch case.
+- Java, C, and C++: language-specific Tree-sitter grammar wheels parse source and report syntax error locations. Selected pattern checks warn about Java string identity comparisons and unsafe C/C++ buffer functions or likely missing `&` in `scanf` destinations. Loop nesting for these languages is estimated from Tree-sitter syntax nodes rather than counting braces in source text.
+- All supported languages: a rough loop-based time and auxiliary-space estimate and a compact source outline are shown. Use the severity filter to focus the findings list on errors, warnings, or informational notes.
 
 The results also include a heuristic auxiliary-space estimate, example replacements for a few recognized warning patterns, and a conditional hash set/map optimization tip for nested comparison loops. These suggestions only apply when their stated conditions fit the program.
 
 These are static checks, not a complete compiler, type checker, security scanner, or proof of correctness. They can miss real defects and can flag code that is intentional. Replacement examples are provided only for a few recognized patterns and should be reviewed before use. The static analyzer does not execute user code; the separate remote run only happens after the user explicitly clicks its button. Time and space complexity estimates are approximate for every language, especially when called functions, recursion, library behavior, or input sizes affect the result.
+
+## Known limitations / sample inputs
+
+Try the live demo in about 30 seconds: choose **Python**, paste one sample below, and click **Analyze my code**. The checks are intentionally lightweight and may report false positives; complexity is heuristic. C, C++, and Java nesting estimates depend on the Tree-sitter grammar and do not infer input sizes or costs inside called functions. The optional run button sends code to the configured OnlineCompiler sandbox; analysis itself does not run code.
+
+```python
+# Trigger: unused local, == None, and code after return
+def inspect(value):
+    temporary = 7
+    if value == None:
+        return "missing"
+        print("unreachable")
+```
+
+For a clean comparison, change `value == None` to `value is None`, return `temporary`, and move or remove the final print. For a structural complexity example, select **C++** and try two nested `for` loops; the estimate should show quadratic nesting. See `tests/` for paired triggering and safe samples for every added Python rule.
 
 ## Adding checks
 

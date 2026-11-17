@@ -1,3 +1,6 @@
 streamlit>=1.38,<2
 graphviz>=0.20,<1
-tree-sitter-language-pack>=1.10,<2
+tree-sitter>=0.25,<0.27
+tree-sitter-c>=0.24,<0.25
+tree-sitter-cpp>=0.23,<0.24
+tree-sitter-java>=0.23,<0.24

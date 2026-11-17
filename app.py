@@ -289,7 +289,17 @@ if result:
                     st.code(optimization["example"], language={"Python": "python", "Java": "java", "C": "c", "C++": "cpp"}.get(result["language"], "text"))
 
         st.markdown("#### Findings")
-        for finding in findings:
+        severity_filter = st.selectbox(
+            "Show findings",
+            ("All severities", "Error", "Warning", "Info"),
+            key="finding_severity_filter",
+        )
+        visible_findings = findings if severity_filter == "All severities" else [
+            item for item in findings if item["severity"] == severity_filter
+        ]
+        if not visible_findings:
+            st.info(f"No {severity_filter.lower()} findings in this review.")
+        for finding in visible_findings:
             title = f"{finding['severity']} · line {finding['line']} · {finding['rule']}"
             body = finding["message"]
             if finding.get("suggestion"):
